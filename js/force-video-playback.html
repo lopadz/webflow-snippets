@@ -1,0 +1,75 @@
+<style>
+	/* Simple fade in animation */
+	.fade-in {
+		animation: fadeIn .35s ease-out forwards;
+	}
+	@keyframes fadeIn {
+		0% {opacity:0;}
+		100% {opacity:1;}
+	}
+</style>
+
+<script>
+
+	// Gets all the WF video elements that have a data-force-playback attribute
+	const videoElements = document.querySelectorAll('[data-force-playback]');
+
+	function forceVideoPlaybackOnLPM() {
+
+		// Adds a property to the video element to check whether the video is already playing or not
+		// Credit: https://shaktisinghcheema.com/how-to-autoplay-video-on-mobile-devices-on-low-power-mode/
+		Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
+			get: function () {
+				return !!(this.currentTime > 0 && !this.paused && !this.ended && this.readyState > 2);
+			}
+		});
+
+		// Checks if videoElements exists
+		if (typeof videoElements === 'undefined')
+				return;
+
+		// Loops thru each WF video element
+		for (let i = 0; i < videoElements.length; i++) {
+
+			// Checks if value is set to true
+			if (videoElements[i].dataset.forcePlayback === 'true') {
+
+				// Parent of WF video element. Set opacity to 0 in WF to fade in element on load.
+				let videoElParent = videoElements[i];
+				// Gets url of video poster
+				let videoPoster = videoElParent.dataset.posterUrl;
+				// Webflow background videos are loaded within a div by default.
+				// We need to target the first child element which is the video element.
+				let videoEl = videoElements[i].firstElementChild;
+				
+				// Monitors if video element invokes the 'suspend' event, triggered when LPM is enabled.
+				videoEl.addEventListener('suspend', () => {
+					if (videoEl.playing) {
+						// Video already playing so do nothing
+					} else {
+						// Detects when the window interaction starts to force video playback when LPM is enabled.
+						window.addEventListener('touchstart', () => {
+							// Plays the video
+							videoEl.play();
+							// Waits 50ms before applying fade in class
+							setTimeout(() => {
+								// Adds a .fade-in class to the video parent to avoid displaying the native play button while on LPM.
+								videoElParent.classList.add('fade-in');
+							}, 50);
+						});
+					}
+				});
+
+				// Detects if video is already playing
+				videoEl.addEventListener('play', () => {
+					// Adds a .fade-in class to the video parent.
+					videoElParent.classList.add('fade-in');
+				});
+
+			}
+		}
+	}
+
+	forceVideoPlaybackOnLPM();
+
+</script>
